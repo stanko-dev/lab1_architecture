@@ -2,6 +2,8 @@
 package com.example.service;
 
 import com.example.model.Employee;
+import com.example.repository.ExcelEmployeeRepository;
+import com.example.repository.MongoEmployeeRepository;
 import com.example.repository.SqlEmployeeRepository;
 
 import java.util.ArrayList;
@@ -12,13 +14,20 @@ import java.util.stream.Collectors;
 
 public class EmployeeService {
     private final SqlEmployeeRepository sqlRepository;
+    private final MongoEmployeeRepository mongoRepository;
+    private final ExcelEmployeeRepository excelRepository;
     private final String databaseDepartment;
-    private final List<Employee> manualEmployees;
 
-    public EmployeeService(SqlEmployeeRepository sqlRepository, String databaseDepartment, List<Employee> manualEmployees) {
+    public EmployeeService(
+            SqlEmployeeRepository sqlRepository,
+            MongoEmployeeRepository mongoRepository,
+            ExcelEmployeeRepository excelRepository,
+            String databaseDepartment
+    ) {
         this.sqlRepository = sqlRepository;
+        this.mongoRepository = mongoRepository;
+        this.excelRepository = excelRepository;
         this.databaseDepartment = databaseDepartment;
-        this.manualEmployees = new ArrayList<>(manualEmployees);
     }
 
     public List<Employee> getAllEmployees() {
@@ -27,7 +36,11 @@ public class EmployeeService {
                 .map(Employee::clone)
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        manualEmployees.stream()
+        mongoRepository.getAllEmployees().stream()
+                .map(Employee::clone)
+                .forEach(combined::add);
+
+        excelRepository.getAllEmployees().stream()
                 .map(Employee::clone)
                 .forEach(combined::add);
 

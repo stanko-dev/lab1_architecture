@@ -49,28 +49,22 @@ public class H2ConnectionManager {
                 )
                 """;
 
-        String countSql = "SELECT COUNT(*) FROM employees";
-        String insertSql = """
-                INSERT INTO employees (
+        String mergeSql = """
+                MERGE INTO employees (
                     id, name, department, type, base_salary, bonus, hourly_rate, hours_per_month,
                     commission_rate, monthly_sales, on_call_hours, on_call_rate
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) KEY(id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (Connection connection = getConnection();
              Statement statement = connection.createStatement()) {
             statement.execute(createTableSql);
 
-            try (var resultSet = statement.executeQuery(countSql)) {
-                resultSet.next();
-                if (resultSet.getInt(1) == 0) {
-                    try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
-                        insertEmployee(preparedStatement, 1, "Alice Carter", "Engineering", "MANAGER",
-                                7000.0, 1500.0, null, null, null, null, null, null);
-                        insertEmployee(preparedStatement, 2, "Brian Mills", "Engineering", "SYS_ADMIN",
-                                5200.0, null, null, null, null, null, 20, 60.0);
-                    }
-                }
+            try (PreparedStatement preparedStatement = connection.prepareStatement(mergeSql)) {
+                insertEmployee(preparedStatement, 1, "Alice Carter", "IT", "MANAGER",
+                        7000.0, 1500.0, null, null, null, null, null, null);
+                insertEmployee(preparedStatement, 2, "Brian Mills", "IT", "SYS_ADMIN",
+                        5200.0, null, null, null, null, null, 20, 60.0);
             }
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to initialize H2 database", exception);
