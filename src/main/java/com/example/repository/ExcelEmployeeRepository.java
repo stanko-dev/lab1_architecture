@@ -11,14 +11,16 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class ExcelEmployeeRepository implements EmployeeRepository {
     private final ExcelFileManager fileManager;
-    private final EmployeeFactory employeeFactory;
+    private final Map<String, EmployeeFactory> employeeFactories;
 
-    public ExcelEmployeeRepository(ExcelFileManager fileManager, EmployeeFactory employeeFactory) {
+    public ExcelEmployeeRepository(ExcelFileManager fileManager, Map<String, EmployeeFactory> employeeFactories) {
         this.fileManager = fileManager;
-        this.employeeFactory = employeeFactory;
+        this.employeeFactories = employeeFactories;
     }
 
     @Override
@@ -33,8 +35,7 @@ public class ExcelEmployeeRepository implements EmployeeRepository {
                     continue;
                 }
 
-                employees.add(employeeFactory.createEmployee(
-                        row.getCell(3).getStringCellValue(),
+                employees.add(resolveFactory(row.getCell(3).getStringCellValue()).createEmployee(
                         (int) row.getCell(0).getNumericCellValue(),
                         row.getCell(1).getStringCellValue(),
                         row.getCell(2).getStringCellValue(),
@@ -53,5 +54,13 @@ public class ExcelEmployeeRepository implements EmployeeRepository {
         }
 
         return employees;
+    }
+
+    private EmployeeFactory resolveFactory(String type) {
+        EmployeeFactory factory = employeeFactories.get(type.toUpperCase(Locale.ROOT));
+        if (factory == null) {
+            throw new IllegalArgumentException("Unsupported employee type: " + type);
+        }
+        return factory;
     }
 }

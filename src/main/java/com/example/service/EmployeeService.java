@@ -2,7 +2,7 @@
 package com.example.service;
 
 import com.example.model.Employee;
-import com.example.repository.EmployeeRepository;
+import com.example.repository.SqlEmployeeRepository;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -11,16 +11,18 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public class EmployeeService {
-    private final EmployeeRepository repository;
+    private final SqlEmployeeRepository sqlRepository;
+    private final String databaseDepartment;
     private final List<Employee> manualEmployees;
 
-    public EmployeeService(EmployeeRepository repository, List<Employee> manualEmployees) {
-        this.repository = repository;
+    public EmployeeService(SqlEmployeeRepository sqlRepository, String databaseDepartment, List<Employee> manualEmployees) {
+        this.sqlRepository = sqlRepository;
+        this.databaseDepartment = databaseDepartment;
         this.manualEmployees = new ArrayList<>(manualEmployees);
     }
 
     public List<Employee> getAllEmployees() {
-        List<Employee> combined = repository.getAllEmployees()
+        List<Employee> combined = sqlRepository.getEmployeesByDepartment(databaseDepartment)
                 .stream()
                 .map(Employee::clone)
                 .collect(Collectors.toCollection(ArrayList::new));

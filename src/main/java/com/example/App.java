@@ -8,6 +8,10 @@ import com.example.config.MongoConnectionManager;
 import com.example.config.MongoDatabaseConfig;
 import com.example.config.SqlDatabaseConfig;
 import com.example.factory.EmployeeFactory;
+import com.example.factory.ManagerFactory;
+import com.example.factory.OfficeClerkFactory;
+import com.example.factory.SalesManagerFactory;
+import com.example.factory.SysAdminFactory;
 import com.example.model.Employee;
 import com.example.model.Manager;
 import com.example.model.OfficeClerk;
@@ -25,10 +29,11 @@ import java.util.List;
 import java.util.Map;
 
 public class App {
+    private static final String DATABASE_DEPARTMENT = "Engineering";
 
     public static void main(String[] args) {
         try {
-            EmployeeFactory employeeFactory = new EmployeeFactory();
+            Map<String, EmployeeFactory> employeeFactories = createEmployeeFactories();
 
             SqlDatabaseConfig sqlConfig = new SqlDatabaseConfig.Builder()
                     .jdbcUrl("jdbc:h2:file:./employeesdb")
@@ -51,14 +56,14 @@ public class App {
             MongoConnectionManager mongoConnectionManager = MongoConnectionManager.getInstance(mongoConfig);
             ExcelFileManager excelFileManager = ExcelFileManager.getInstance(excelConfig);
 
-            EmployeeRepository sqlRepository = new SqlEmployeeRepository(h2ConnectionManager, employeeFactory);
-            EmployeeRepository mongoRepository = new MongoEmployeeRepository(mongoConnectionManager, employeeFactory);
-            EmployeeRepository excelRepository = new ExcelEmployeeRepository(excelFileManager, employeeFactory);
+            SqlEmployeeRepository sqlRepository = new SqlEmployeeRepository(h2ConnectionManager, employeeFactories);
+            EmployeeRepository mongoRepository = new MongoEmployeeRepository(mongoConnectionManager, employeeFactories);
+            EmployeeRepository excelRepository = new ExcelEmployeeRepository(excelFileManager, employeeFactories);
 
-            List<Employee> manualDepartments = buildManualDepartments(employeeFactory);
-            EmployeeService employeeService = new EmployeeService(sqlRepository, manualDepartments);
+            List<Employee> manualDepartments = buildManualDepartments();
+            EmployeeService employeeService = new EmployeeService(sqlRepository, DATABASE_DEPARTMENT, manualDepartments);
 
-            printSourcePreview("SQL repository", sqlRepository.getAllEmployees());
+            printSourcePreview("SQL repository department " + DATABASE_DEPARTMENT, sqlRepository.getEmployeesByDepartment(DATABASE_DEPARTMENT));
             printSourcePreview("Mongo repository", mongoRepository.getAllEmployees());
             printSourcePreview("Excel repository", excelRepository.getAllEmployees());
 
@@ -87,25 +92,34 @@ public class App {
         }
     }
 
-    private static List<Employee> buildManualDepartments(EmployeeFactory employeeFactory) {
-        Manager hrPrototype = employeeFactory.createManager(1000, "HR Prototype", "HR", 5400.0, 900.0);
+    private static Map<String, EmployeeFactory> createEmployeeFactories() {
+        return Map.of(
+                "MANAGER", new ManagerFactory(),
+                "OFFICE_CLERK", new OfficeClerkFactory(),
+                "SALES_MANAGER", new SalesManagerFactory(),
+                "SYS_ADMIN", new SysAdminFactory()
+        );
+    }
+
+    private static List<Employee> buildManualDepartments() {
+        Manager hrPrototype = new Manager(1000, "HR Prototype", "HR", 5400.0, 900.0);
         Employee hrManager = hrPrototype.clone();
         hrManager.setId(1001);
         hrManager.setName("Helena Grant");
 
-        OfficeClerk supportPrototype = employeeFactory.createOfficeClerk(2000, "Support Prototype", "Support", 19.5, 168);
+        OfficeClerk supportPrototype = new OfficeClerk(2000, "Support Prototype", "Support", 19.5, 168);
         Employee supportClerk = supportPrototype.clone();
         supportClerk.setId(2001);
         supportClerk.setName("Mila Novak");
 
-        SalesManager supportSalesPrototype = employeeFactory.createSalesManager(
+        SalesManager supportSalesPrototype = new SalesManager(
                 3000, "Support Sales Prototype", "Support", 4100.0, 0.06, 18000.0
         );
         Employee supportSalesManager = supportSalesPrototype.clone();
         supportSalesManager.setId(3001);
         supportSalesManager.setName("Owen Hale");
 
-        SysAdmin hrAdminPrototype = employeeFactory.createSysAdmin(4000, "IT Prototype", "HR", 4600.0, 12, 55.0);
+        SysAdmin hrAdminPrototype = new SysAdmin(4000, "IT Prototype", "HR", 4600.0, 12, 55.0);
         Employee hrSysAdmin = hrAdminPrototype.clone();
         hrSysAdmin.setId(4001);
         hrSysAdmin.setName("Nina Ivers");

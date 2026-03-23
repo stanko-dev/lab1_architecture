@@ -1,10 +1,12 @@
-// File: com/example/factory/EmployeeFactory.java
+// File: com/example/factory/ManagerFactory.java
 package com.example.factory;
 
 import com.example.model.Employee;
+import com.example.model.Manager;
 
-public interface EmployeeFactory {
-    Employee createEmployee(
+public class ManagerFactory implements EmployeeFactory {
+    @Override
+    public Employee createEmployee(
             int id,
             String name,
             String department,
@@ -16,5 +18,7 @@ public interface EmployeeFactory {
             double monthlySales,
             int onCallHours,
             double onCallRate
-    );
+    ) {
+        return new Manager(id, name, department, baseSalary, bonus);
+    }
 }

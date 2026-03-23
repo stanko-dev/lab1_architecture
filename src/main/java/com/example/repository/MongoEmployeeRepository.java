@@ -9,14 +9,19 @@ import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 public class MongoEmployeeRepository implements EmployeeRepository {
     private final MongoConnectionManager connectionManager;
-    private final EmployeeFactory employeeFactory;
+    private final Map<String, EmployeeFactory> employeeFactories;
 
-    public MongoEmployeeRepository(MongoConnectionManager connectionManager, EmployeeFactory employeeFactory) {
+    public MongoEmployeeRepository(
+            MongoConnectionManager connectionManager,
+            Map<String, EmployeeFactory> employeeFactories
+    ) {
         this.connectionManager = connectionManager;
-        this.employeeFactory = employeeFactory;
+        this.employeeFactories = employeeFactories;
     }
 
     @Override
@@ -25,8 +30,7 @@ public class MongoEmployeeRepository implements EmployeeRepository {
         MongoCollection<Document> collection = connectionManager.getCollection();
 
         for (Document document : collection.find()) {
-            employees.add(employeeFactory.createEmployee(
-                    document.getString("type"),
+            employees.add(resolveFactory(document.getString("type")).createEmployee(
                     document.getInteger("id"),
                     document.getString("name"),
                     document.getString("department"),
@@ -42,6 +46,14 @@ public class MongoEmployeeRepository implements EmployeeRepository {
         }
 
         return employees;
+    }
+
+    private EmployeeFactory resolveFactory(String type) {
+        EmployeeFactory factory = employeeFactories.get(type.toUpperCase(Locale.ROOT));
+        if (factory == null) {
+            throw new IllegalArgumentException("Unsupported employee type: " + type);
+        }
+        return factory;
     }
 
     private double getDouble(Document document, String key) {
